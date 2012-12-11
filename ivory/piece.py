@@ -15,58 +15,40 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-PIECES = 'pnbrqk'
-COLORS = 'wb'
+class piece(int):
+    PIECES = 'pnbrqk'
+    INTS = range(1, len(PIECES) + 1)
+    piece_to_int = dict(zip(PIECES, INTS))
+    piece_to_int['-'] = 0
+    int_to_piece = dict(zip(INTS, PIECES))
+    int_to_piece[0] = '-'
+    NONE = piece_to_int['-']
+    PAWN = piece_to_int['p']
+    KNIGHT = piece_to_int['n']
+    BISHOP = piece_to_int['b']
+    ROOK = piece_to_int['r']
+    QUEEN = piece_to_int['q']
+    KING = piece_to_int['k']
 
-class BadPiece(ValueError):
-    pass
-
-
-class BadColor(ValueError):
-    pass
-
-
-class Piece(object):
-    class_map = None
-
-    def __new__(cls, value, square=None, board=None):
-        if value.lower() not in PIECES:
-            raise BadPiece('bad piece type specified')
-        if not Piece.class_map:
-            Piece.class_map = {
-                'p': Pawn,
-                'n': Knight,
-                'b': Bishop,
-                'r': Rook,
-                'q': Queen,
-                'k': King
-            }
-        piece = cls.class_map[value.lower()]
-        return object.__new__(piece, value, square, board)
-
-    def __init__(self, value, square=None, board=None):
-        self.color = 1 if value < 'a' else 0
-        self.value = value.lower()
-        self.square = square
-        self.board = board
+    def __new__(cls, val=0):
+        if isinstance(val, basestring):
+            val = cls._parse(val)
+        return int.__new__(piece, val)
 
     def __str__(self):
-        return self.value.upper() if self.color else self.value
+        return self.int_to_piece[self]
 
-class Pawn(Piece):
-    pass
+    def __repr__(self):
+        return "piece('%s')" % self
 
-class Knight(Piece):
-    pass
+    @classmethod
+    def _parse(cls, val):
+        val = val.lower()
+        if val not in cls.PIECES:
+            raise ValueError("invalid piece value: %s" % val)
+        return cls.piece_to_int[val]
 
-class Rook(Piece):
-    pass
-
-class Bishop(Piece):
-    pass
-
-class Queen(Piece):
-    pass
-
-class King(Piece):
-    pass
+    @classmethod
+    def all(cls):
+        for i in cls.INTS:
+            yield cls(i)

@@ -1,0 +1,167 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
+# Copyright 2012 Vishvananda Ishaya
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+
+class square(long):
+    FILES = 'abcdefgh'
+    RANKS = '12345678'
+    SQUARES = [f + r for r in RANKS for f in FILES]
+    INTS = [1L << i for i in xrange(64)]
+    BIT_FILES = [sum(INTS[x::8]) for x in xrange(8)]
+    BIT_RANKS = [sum(INTS[x * 8:(x * 8) + 8]) for x in xrange(8)]
+    BIT_A1H8 = ([sum(INTS[(7 - x) * 8::9]) for x in xrange(8)] +
+                [sum(INTS[x:(8 - x) * 8:9]) for x in xrange(1, 8)])
+    BIT_A8H1 = ([sum(INTS[x:x * 8 + 1:7]) for x in xrange(8)] +
+                [sum(INTS[x * 8 + 7::7]) for x in xrange(1, 8)])
+
+    NOT_FIRST_FILE = ~(BIT_FILES[0])
+    NOT_LAST_FILE = ~(BIT_FILES[-1])
+    NOT_FIRST_TWO_FILES = ~(BIT_FILES[0] | BIT_FILES[1])
+    NOT_LAST_TWO_FILES = ~(BIT_FILES[-2] | BIT_FILES[-1])
+    square_to_int = dict(zip(SQUARES, INTS))
+    square_to_int['-'] = 0
+    int_to_square = dict(zip(INTS, SQUARES))
+    int_to_square[0] = '-'
+    def __new__(cls, val=0):
+        if isinstance(val, basestring):
+            val = cls._parse(val)
+        return long.__new__(square, val)
+
+    def __str__(self):
+        return self.int_to_square[self]
+
+    def __repr__(self):
+        return "square('%s')" % self
+
+    def __not__(self):
+        return square(long.__and__(self))
+
+    def __and__(self, other):
+        return square(long.__and__(self, other))
+
+    def __or__(self, other):
+        return square(long.__or__(self, other))
+
+    def __lshift__(self, other):
+        return square(long.__lshift__(self, other))
+
+    def __rshift__(self, other):
+        return square(long.__rshift__(self, other))
+
+    # NOTE(vish): mask is necessary for overflow
+    def n(self):
+         return (self << 8) & 0xFFFFFFFFFFFFFFFF
+
+    def e(self):
+        return (self & self.NOT_LAST_FILE) << 1
+
+    def s(self):
+        return self >> 8
+
+    def w(self):
+        return (self & self.NOT_FIRST_FILE) >> 1
+
+    def nn(self):
+         return (self << 16) & 0xFFFFFFFFFFFFFFFF
+
+    def ss(self):
+        return self >> 16
+
+    def ne(self):
+        return ((self & self.NOT_LAST_FILE) << 9) & 0xFFFFFFFFFFFFFFFF
+
+    def se(self):
+        return (self & self.NOT_LAST_FILE) >> 7
+
+    def sw(self):
+        return (self & self.NOT_FIRST_FILE) >> 9
+
+    def nw(self):
+        return ((self & self.NOT_FIRST_FILE) << 7) & 0xFFFFFFFFFFFFFFFF
+
+    def nne(self):
+        return ((self & self.NOT_LAST_FILE) << 17) & 0xFFFFFFFFFFFFFFFF
+
+    def ene(self):
+        return ((self & self.NOT_LAST_TWO_FILES) << 10) & 0xFFFFFFFFFFFFFFFF
+
+    def ese(self):
+        return (self & self.NOT_LAST_TWO_FILES) >> 6
+
+    def sse(self):
+        return (self & self.NOT_LAST_FILE) >> 15
+
+    def ssw(self):
+        return (self & self.NOT_FIRST_FILE) >> 17
+
+    def wsw(self):
+        return (self & self.NOT_FIRST_TWO_FILES) >> 10
+
+    def wnw(self):
+        return ((self & self.NOT_FIRST_TWO_FILES) << 6) & 0xFFFFFFFFFFFFFFFF
+
+    def nnw(self):
+        return ((self & self.NOT_FIRST_FILE) << 15) & 0xFFFFFFFFFFFFFFFF
+
+    @property
+    def index(self):
+        return self.INTS.index(self)
+
+    @property
+    def file(self):
+        return self.index & 0x7
+
+    @property
+    def rank(self):
+        return self.index >> 3
+
+    @property
+    def a1h8(self):
+        return 7 - self.rank + self.file
+
+    @property
+    def a8h1(self):
+        return self.rank + self.file
+
+    @classmethod
+    def all(cls):
+        for i in cls.INTS:
+            yield cls(i)
+
+    @classmethod
+    def _parse(cls, val):
+        if val not in cls.SQUARES:
+            raise ValueError("Invalid square value: %s" % val)
+        return cls.square_to_int[val]
+
+    @classmethod
+    def from_index(cls, index):
+        return cls(cls.INTS[index])
+
+    @classmethod
+    def from_a8(cls, rank, file):
+        return cls(cls.INTS[(7 - rank) * 8 + file])
+
+    @classmethod
+    def from_a1(cls, rank, file):
+        return cls(cls.INTS[rank * 8 + file])
+
+    def walk(self, dir):
+        sq = getattr(self, dir)()
+        while sq:
+            yield sq
+            sq = getattr(sq, dir)()

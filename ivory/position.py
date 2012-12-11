@@ -1,0 +1,334 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
+# Copyright 2012 Vishvananda Ishaya
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+from ivory.bitboard import bitboard
+from ivory import movegen
+from ivory.piece import piece
+from ivory.square import square
+
+
+class color(int):
+    COLORS = 'bw'
+    INTS = range(len(COLORS))
+    color_to_int = dict(zip(COLORS, INTS))
+    int_to_color = dict(zip(INTS, COLORS))
+    BLACK = color_to_int['b']
+    WHITE = color_to_int['w']
+
+    def __new__(cls, val=0):
+        if isinstance(val, basestring):
+            val = cls._parse(val)
+        return int.__new__(color, val)
+
+    def __str__(self):
+        return self.int_to_color[self]
+
+    def __repr__(self):
+        return "color('%s')" % self
+
+    @classmethod
+    def _parse(cls, val):
+        if val not in cls.COLORS:
+            if val.lower() in piece.PIECES:
+                return int(val.isupper())
+            else:
+                raise ValueError("invalid color value: %s" % val)
+        return cls.color_to_int[val]
+
+    def flip(self):
+        return color(not self)
+
+    @classmethod
+    def all(cls):
+        for i in cls.INTS:
+            yield cls(i)
+
+
+class Position(object):
+    def __init__(self, fen=None):
+        if not fen:
+            fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        self.fen = fen
+
+    def __str__(self):
+        return self.fen
+
+    def __repr__(self):
+        return "(%r)" % self.fen
+
+    def _get_square_color(self, sq):
+        for cl in color.all():
+            if self.color_bbs[cl] & sq:
+                return cl
+        return color(color.NONE)
+
+    def _get_fen_board(self):
+        pieces = [None] * 64
+        for sq, ps in self.squares.iteritems():
+            val = str(ps)
+            if self._get_square_color(sq) == color.WHITE:
+                val = val.upper()
+            pieces[sq.index] = val
+        ranks = []
+        for rank in xrange(8):
+            count = 0
+            out = ''
+            for file in xrange(8):
+                piece = pieces[square.from_a8(rank, file).index]
+                if piece is None:
+                    count += 1
+                    if file == 7:
+                        out += '%d' % count
+                else:
+                    if count:
+                        out += '%d' % count
+                        count = 0
+                    out += str(piece)
+            ranks.append(out)
+        return '/'.join(ranks)
+
+    @property
+    def fen(self):
+        board_string = self._get_fen_board()
+
+        return ' '.join([board_string, str(self.color), str(self.castle),
+                         self.en_passant or '-', str(self.halfmove_clock),
+                         str(self.move_num)])
+
+    @fen.setter
+    def fen(self, value):
+        try:
+            board, cl, cst, enp, clock, move = value.split()
+        except ValueError:
+            raise ValueError('wrong number of fields')
+        self._clear()
+        self._parse_fen_board(board)
+        self.color = color(cl)
+        self.castle = movegen.castle(cst)
+
+        if enp != '-':
+            try:
+                self.en_passant = square(enp)
+            except ValueError:
+                raise ValueError('bad en passant data')
+            self.en_passant = enp
+
+        try:
+            self.halfmove_clock = int(clock)
+        except ValueError:
+            raise ValueError('bad halfmove clock')
+
+        try:
+            self.move_num = int(move)
+        except ValueError:
+            raise ValueError('bad move number')
+
+    def _clear(self):
+        self.piece_bbs = {}
+        for pc in piece.all():
+            self.piece_bbs[pc] = bitboard()
+        self.color_bbs = {}
+        self.squares = {}
+        for cl in color.all():
+            self.color_bbs[cl] = bitboard()
+        self.castle = movegen.castle('KQkq')
+        self.en_passant = square()
+        self.halfmove_clock = 0
+        self.move_num = 1
+
+    def set_square(self, sq, pc, cl=None):
+        if cl is None:
+            cl = self.color
+        self.piece_bbs[pc] |= sq
+        self.color_bbs[cl] |= sq
+        self.squares[sq] = pc
+
+    def clear_square(self, sq):
+        pc = self.squares.get(sq)
+        if pc:
+            self.piece_bbs[pc] &= ~sq
+            for cl in color.all():
+                self.color_bbs[cl] &= ~sq
+            del self.squares[sq]
+        return pc
+
+    def _parse_fen_board(self, board_string):
+        try:
+            ranks = board_string.split('/')
+            board = [[None] * 8 for x in range(8)]
+            for rank, data in enumerate(ranks):
+                file = 0
+                for char in data:
+                    if char.isdigit():
+                        num = int(char)
+                        if num < 1 or num > 8:
+                            raise ValueError('bad integer in board data')
+                        file += num
+                    else:
+                        try:
+                            pc = piece(char)
+                            cl = color(char)
+                            self.set_square(square.from_a8(rank, file), pc, cl)
+                            file += 1
+                        except ValueError:
+                            raise ValueError('bad piece in board data')
+                if file != 8:
+                    raise ValueError('bad number of files')
+            if rank != 7:
+                raise ValueError('wrong number of ranks')
+            return board
+        except ValueError:
+            raise
+        except Exception:
+            raise
+            raise ValueError('error parsing fen board data')
+
+    @property
+    def occupied(self):
+        return self.color_bbs[color.WHITE] | self.color_bbs[color.BLACK]
+
+    @property
+    def pseudo_moves(self):
+        moves = []
+        movegen.get_pawn_moves(self, moves)
+        movegen.get_knight_moves(self, moves)
+        movegen.get_bishop_moves(self, moves)
+        movegen.get_rook_moves(self, moves)
+        movegen.get_queen_moves(self, moves)
+        movegen.get_king_moves(self, moves)
+        return moves
+
+    @property
+    def moves(self):
+        moves = self.pseudo_moves
+        self._test_moves(moves)
+        self._disambiguate_moves(moves)
+        return moves
+
+    def _test_moves(self, moves, check_end=True):
+        for move in moves:
+            moving_color = self.color
+            pc = self.make_move(move)
+            if movegen.king_attacked(self, moving_color):
+                moves.pop(move)
+                continue
+            if pc:
+                moves[moves.index(move)] = move.set_capture()
+
+            if check_end and movegen.king_attacked(self, self.color):
+                if self._game_over(self):
+                    moves[moves.index(move)] = move.set_mate()
+                else:
+                    moves[moves.index(move)] = move.set_check()
+            self.unmake_move(move, pc)
+
+    def _game_over(self):
+        moves = self.moves
+        self._test_moves(moves, False)
+        return not moves
+
+    def _disambiguate_moves(self, moves):
+        files = {}
+        ranks = {}
+        for move in moves:
+            if move.promotion:
+                continue
+            ps = (move.piece, move.tosq)
+            files.setdefault(ps, [])
+            ranks.setdefault(ps, [])
+            files[ps].append(move.frsq.file)
+            ranks[ps].append(move.frsq.rank)
+
+        opp_cl = self.color.flip()
+        for i, move in enumerate(moves):
+            ps = (move.piece, move.tosq)
+            if files[ps].count(move.frsq.file) > 1:
+                moves[i] = moves[i].set_show_rank()
+            if ranks[ps].count(move.frsq.rank) > 1:
+                moves[i] = moves[i].set_show_file()
+
+    def __getitem__(self, index):
+        return self.squares.get(index)
+
+    MOVES = []
+    def make_move(self, move):
+        self.MOVES.append(move)
+        cl = self.color
+        self.color = self.color.flip()
+        opp_cl = self.color
+        self.halfmove_clock += 1
+        if cl == color.BLACK:
+            self.move_num += 1
+        pc = self.clear_square(move.tosq)
+        self.set_square(move.tosq, move.piece, cl)
+        self.clear_square(move.frsq)
+
+        if move.promotion == piece.PAWN:
+            enp = move.tosq.n() if opp_cl == color.WHITE else move.tosq.s()
+            self.clear_square(enp)
+        elif move.promotion == piece.KING:
+            frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq]
+            rook = self.clear_square(frsq)
+            self.set_square(tosq, rook, cl)
+        return pc
+
+    def unmake_move(self, move, pc):
+        self.MOVES.pop()
+        opp_cl = self.color
+        self.color = self.color.flip()
+        cl = self.color
+        self.halfmove_clock -= 1
+        if cl == color.BLACK:
+            self.move_num -= 1
+        self.set_square(move.frsq, move.piece, cl)
+        self.clear_square(move.tosq)
+
+        if move.promotion == piece.PAWN:
+            enp = move.tosq.n() if opp_cl == color.WHITE else move.tosq.s()
+            self.set_square(enp, piece(piece.PAWN), opp_cl)
+        elif move.promotion == piece.KING:
+            frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq]
+            rook = self.clear_square(frsq)
+            self.set_square(move.tosq, rook, cl)
+        elif pc:
+            self.set_square(move.tosq, pc, opp_cl)
+
+    def perft(self, depth):
+        nodes = 0
+        if depth == 0:
+            return 1
+        for move in self.pseudo_moves:
+            pc = self.make_move(move)
+            nodes += self.perft(depth - 1)
+            self.unmake_move(move, pc)
+        return nodes
+
+# NOTE(vish): insert constants into locals
+for sq in square.all():
+    locals()[str(sq)] = square(sq)
+
+for pc in piece.all():
+    locals()[str(pc)] = piece(pc)
+
+p1 = Position()
+print p1.fen
+
+import time
+a = time.time()
+import cProfile
+cProfile.run('nodes = p1.perft(3)')
+print nodes, time.time() - a
