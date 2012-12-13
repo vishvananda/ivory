@@ -23,9 +23,11 @@ from ivory import move
 from ivory import piece
 from ivory import square
 
+
 def _make_promotions(moves, frsq, tosq):
     for pc in (piece.KNIGHT, piece.BISHOP, piece.ROOK, piece.QUEEN):
         moves.append(move.mv(piece.PAWN, frsq, tosq, promotion=pc))
+
 
 def get_pawn_moves(pos, moves):
     pawns = pos.piece_bbs[piece.PAWN] & pos.color_bbs[pos.color]
@@ -61,7 +63,6 @@ def get_pawn_moves(pos, moves):
         for sq in bitboard.squares(doubles & not_occ):
             moves.append(move.mv(piece.PAWN, square.ss(sq), sq))
 
-
     else:
         # single pawn moves
         regular = pawns & ~square.BIT_RANKS[1]
@@ -90,6 +91,7 @@ def get_pawn_moves(pos, moves):
         doubles = bitboard.s(single & square.BIT_RANKS[5])
         for sq in bitboard.squares(doubles & not_occ):
             moves.append(move.mv(piece.PAWN, square.nn(sq), sq))
+
 
 def get_pawn_moves_2(pos, moves):
     pawns = pos.piece_bbs[piece.PAWN] & pos.color_bbs[pos.color]
@@ -124,12 +126,14 @@ def get_pawn_moves_2(pos, moves):
     for sq in bitboard.squares(dfwd(double) & occ):
         moves.append(move.mv(piece.PAWN, dback(sq), sq))
 
+
 def get_knight_moves(pos, moves):
     knights = pos.piece_bbs[piece.KNIGHT] & pos.color_bbs[pos.color]
     not_occ = ~pos.color_bbs[pos.color]
     for frsq in bitboard.squares(knights):
         for tosq in bitboard.squares(ATTACKS[piece.KNIGHT][frsq] & not_occ):
             moves.append(move.mv(piece.KNIGHT, frsq, tosq))
+
 
 def get_king_moves(pos, moves):
     frsq = pos.piece_bbs[piece.KING] & pos.color_bbs[pos.color]
@@ -143,6 +147,7 @@ def get_king_moves(pos, moves):
             continue
         moves.append(move.mv(piece.KING, frsq, tosq, piece.KING))
 
+
 def _get_sliding_moves(pos, moves, pc, source=None):
     if not source:
         source = pc
@@ -153,15 +158,19 @@ def _get_sliding_moves(pos, moves, pc, source=None):
         for tosq in bitboard.squares(OCC_ATTACKS[pc][frsq][occ] & not_own_occ):
             moves.append(move.mv(source, frsq, tosq))
 
+
 def get_bishop_moves(pos, moves):
     _get_sliding_moves(pos, moves, piece.BISHOP)
+
 
 def get_rook_moves(pos, moves):
     _get_sliding_moves(pos, moves, piece.ROOK)
 
+
 def get_queen_moves(pos, moves):
     _get_sliding_moves(pos, moves, piece.BISHOP, piece.QUEEN)
     _get_sliding_moves(pos, moves, piece.ROOK, piece.QUEEN)
+
 
 def attacked(pos, sq, opp_cl=None):
     if not opp_cl:
@@ -184,12 +193,14 @@ def attacked(pos, sq, opp_cl=None):
         return True
     return False
 
+
 def king_attacked(pos, cl):
     sq = pos.piece_bbs[piece.KING] & pos.color_bbs[cl]
     return attacked(sq, not cl)
 
+
 def _calc_slide_attacks(sq, occ, pc):
-    result = bitboard.bb()
+    result = 0L
     dirs = ['ne', 'se', 'sw', 'nw'] if pc == piece.BISHOP else 'nesw'
     for dir in dirs:
         for test in square.walk(sq, dir):
@@ -198,42 +209,42 @@ def _calc_slide_attacks(sq, occ, pc):
                 break
     return result
 
+
 def _occ_attack_table(sq, pc):
     mask = MASK[pc][sq]
     bits = bitboard.ones(mask)
     attacks = {}
     for occ_index in xrange(1 << bits):
-        occ = bitboard.bb()
+        occ = 0L
         for sq_index, test_sq in enumerate(bitboard.squares(mask)):
             if occ_index & (1L << sq_index):
                 occ |= test_sq
         attacks[occ] = _calc_slide_attacks(sq, occ, pc)
     return attacks
 
+
 def _king_moves(sq):
-    return bitboard.bb(square.n(sq) | square.s(sq) |
-                       square.e(sq) | square.w(sq) |
-                       square.ne(sq) | square.se(sq) |
-                       square.sw(sq) | square.nw(sq))
+    return (square.n(sq) | square.s(sq) | square.e(sq) | square.w(sq) |
+            square.ne(sq) | square.se(sq) | square.sw(sq) | square.nw(sq))
+
 
 def _knight_moves(sq):
-    return bitboard.bb(square.nne(sq) | square.ene(sq) |
-                       square.ese(sq) | square.sse(sq) |
-                       square.ssw(sq) | square.wsw(sq) |
-                       square.wnw(sq) | square.nnw(sq))
+    return (square.nne(sq) | square.ene(sq) | square.ese(sq) | square.sse(sq) |
+            square.ssw(sq) | square.wsw(sq) | square.wnw(sq) | square.nnw(sq))
+
 
 CASTLE_FLAG_MAP = (
     (
         (castle.WHITE_QUEEN, square.sq('c1'), square.sq('d1'),
-         bitboard.bb(square.sq('b1') | square.sq('c1') | square.sq('d1'))),
+         square.sq('b1') | square.sq('c1') | square.sq('d1')),
         (castle.WHITE_KING, square.sq('g1'), square.sq('f1'),
-         bitboard.bb(square.sq('f1') | square.sq('g1'))),
+         square.sq('f1') | square.sq('g1')),
     ),
     (
         (castle.BLACK_QUEEN, square.sq('c8'), square.sq('d8'),
-         bitboard.bb(square.sq('b8') | square.sq('c8') | square.sq('d8'))),
+         square.sq('b8') | square.sq('c8') | square.sq('d8')),
         (castle.BLACK_KING, square.sq('g8'), square.sq('f8'),
-         bitboard.bb(square.sq('f8') | square.sq('g8'))),
+         square.sq('f8') | square.sq('g8')),
     ),
     )
 CASTLE_SQUARE_MAP = {
@@ -242,6 +253,7 @@ CASTLE_SQUARE_MAP = {
     square.sq('c8'): (square.sq('a8'), square.sq('d8')),
     square.sq('g8'): (square.sq('h8'), square.sq('f8')),
 }
+
 
 if os.path.exists('attacks.pickle'):
     with open('attacks.pickle') as f:
@@ -260,10 +272,10 @@ else:
     OCC_ATTACKS[piece.ROOK] = {}
 
     for sq in square.all():
-        rank = bitboard.bb(square.BIT_RANKS[square.rank(sq)])
-        file = bitboard.bb(square.BIT_FILES[square.file(sq)])
-        a1h8 = bitboard.bb(square.BIT_A1H8[square.a1h8(sq)])
-        a8h1 = bitboard.bb(square.BIT_A8H1[square.a8h1(sq)])
+        rank = square.BIT_RANKS[square.rank(sq)]
+        file = square.BIT_FILES[square.file(sq)]
+        a1h8 = square.BIT_A1H8[square.a1h8(sq)]
+        a8h1 = square.BIT_A8H1[square.a8h1(sq)]
 
         ATTACKS[piece.BISHOP][sq] = a1h8 | a8h1
         MASK[piece.BISHOP][sq] = (

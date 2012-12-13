@@ -118,13 +118,13 @@ class Position(object):
     def _clear(self):
         self.piece_bbs = {}
         for pc in piece.all():
-            self.piece_bbs[pc] = bitboard.bb()
+            self.piece_bbs[pc] = 0L
         self.color_bbs = {}
+        self.color_bbs[0] = 0L
+        self.color_bbs[1] = 0L
         self.squares = {}
         for sq in square.all():
-            self.squares[sq] = None
-        self.color_bbs[0] = bitboard.bb()
-        self.color_bbs[1] = bitboard.bb()
+            self.squares[sq] = 0L
         self.castle = castle.parse('KQkq')
         self.en_passant = square.sq()
         self.halfmove_clock = 0
@@ -308,6 +308,7 @@ print p1.fen
 
 import time
 a = time.time()
-import cProfile
-cProfile.run('nodes = p1.perft(4)')
+#import cProfile
+#cProfile.run('nodes = p1.perft(4)')
+nodes = p1.perft(4)
 print nodes, time.time() - a

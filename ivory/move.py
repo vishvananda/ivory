@@ -18,6 +18,7 @@
 from ivory import piece as ivory_piece
 from ivory import square
 
+
 NONE = 0
 CAPTURE = 1 << 0
 CHECK = 1 << 1
@@ -35,6 +36,7 @@ PIECE = 0xF << PIECE_OFF
 PROMOTION_OFF = 4 + PIECE_OFF
 PROMOTION = 0xF << PROMOTION_OFF
 
+
 def mv(piece, frsq, tosq, promotion=ivory_piece.NONE):
     val = piece
     val = ((square.index(frsq) << FRSQ_OFF) |
@@ -42,74 +44,98 @@ def mv(piece, frsq, tosq, promotion=ivory_piece.NONE):
            (piece << PIECE_OFF) | (promotion << PROMOTION_OFF))
     return val
 
+
 def is_capture(mv):
     return bool(mv & CAPTURE)
+
 
 def set_capture(mv):
     return mv | CAPTURE
 
+
 def clear_capture(mv):
     return mv & ~CAPTURE
+
 
 def is_check(mv):
     return bool(mv & CHECK)
 
+
 def set_check(mv):
     return mv | CHECK
+
 
 def clear_check(mv):
     return mv & ~CHECK
 
+
 def is_mate(mv):
     return bool(mv & MATE)
+
 
 def set_mate(mv):
     return mv | MATE
 
+
 def clear_mate(mv):
     return mv & ~MATE
+
 
 def is_show_file(mv):
     return bool(mv & SHOW_FILE)
 
+
 def set_show_file(mv):
     return mv | SHOW_FILE
+
 
 def clear_show_file(mv):
     return mv & ~SHOW_FILE
 
+
 def is_show_rank(mv):
     return bool(mv & SHOW_RANK)
+
 
 def set_show_rank(mv):
     return mv | SHOW_RANK
 
+
 def clear_show_rank(mv):
     return mv & ~SHOW_RANK
+
 
 def piece(mv):
     return (mv & PIECE) >> PIECE_OFF
 
+
 def set_piece(mv, pc):
     return mv & ~PIECE | (pc << PIECE_OFF)
+
 
 def promotion(mv):
     return (mv & PROMOTION) >> PROMOTION_OFF
 
+
 def set_promotion(mv, pc):
     return (mv & ~PROMOTION) | (pc << PROMOTION_OFF)
+
 
 def frsq(mv):
     return square.from_index((mv & FRSQ) >> FRSQ_OFF)
 
+
 def set_frsq(mv, sq):
     return mv & ~FRSQ | (square.index(sq) << FRSQ_OFF)
+
 
 def tosq(mv):
     return square.from_index((mv & TOSQ) >> TOSQ_OFF)
 
+
 def set_tosq(mv, sq):
     return mv & ~TOSQ | (square.index(sq) << TOSQ_OFF)
+
 
 def str(mv):
     if promotion(mv) == ivory_piece.KING:

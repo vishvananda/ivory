@@ -17,31 +17,35 @@
 
 PIECES = 'pnbrqk'
 INTS = range(1, len(PIECES) + 1)
-piece_to_int = dict(zip(PIECES, INTS))
-piece_to_int['-'] = 0
-int_to_piece = dict(zip(INTS, PIECES))
-int_to_piece[0] = '-'
-NONE = piece_to_int['-']
-PAWN = piece_to_int['p']
-KNIGHT = piece_to_int['n']
-BISHOP = piece_to_int['b']
-ROOK = piece_to_int['r']
-QUEEN = piece_to_int['q']
-KING = piece_to_int['k']
+PIECE_TO_INT = dict(zip(PIECES, INTS))
+PIECE_TO_INT['-'] = 0
+INT_TO_PIECE = dict(zip(INTS, PIECES))
+INT_TO_PIECE[0] = '-'
+NONE = PIECE_TO_INT['-']
+PAWN = PIECE_TO_INT['p']
+KNIGHT = PIECE_TO_INT['n']
+BISHOP = PIECE_TO_INT['b']
+ROOK = PIECE_TO_INT['r']
+QUEEN = PIECE_TO_INT['q']
+KING = PIECE_TO_INT['k']
+
 
 def pc(val=0):
     if isinstance(val, basestring):
         val = _parse(val)
     return val
 
+
 def str(pc):
-    return int_to_piece[pc]
+    return INT_TO_PIECE[pc]
+
 
 def _parse(val):
     val = val.lower()
     if val not in PIECES:
         raise ValueError("invalid piece value: %s" % val)
-    return piece_to_int[val]
+    return PIECE_TO_INT[val]
+
 
 def all():
     for i in INTS:

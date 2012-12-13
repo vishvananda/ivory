@@ -17,9 +17,9 @@
 
 from ivory import square
 
-
 BITS = '01'
-bits_to_int = dict(zip(BITS, xrange(len(BITS))))
+NONE = 0L
+BITS_TO_INT = dict(zip(BITS, xrange(len(BITS))))
 BS_INDEX = [
         0, 47,  1, 56, 48, 27,  2, 60,
        57, 49, 41, 37, 28, 16,  3, 61,
@@ -33,12 +33,14 @@ BS_INDEX = [
 BS_SQUARES = [square.INTS[i] for i in BS_INDEX]
 DEBRUIJIN = 0x03f79d71b4cb0a89L
 
+
 def lsb(bb):
     # NOTE(vish): This is inneficient with python longs. Switching
     #             to numpy.long should speed it up and enable the
     #             removal of the & 0x3F.
     xored = bb ^ (bb - 1)
     return BS_SQUARES[((xored * DEBRUIJIN) >> 58) & 0x3F]
+
 
 def msb(bb):
     bb = bb
@@ -53,19 +55,17 @@ def msb(bb):
     #             removal of the & 0x3F.
     return BS_SQUARES[((bb * DEBRUIJIN) >> 58) & 0x3F]
 
+
 def squares(bb):
     while bb:
         sq = lsb(bb)
         yield sq
         bb = bb & ~sq
 
+
 def ones(bb):
     return sum(1 for sq in squares(bb))
 
-def bb(val=0):
-    if isinstance(val, basestring):
-        val = _parse(val)
-    return val
 
 def str(bb):
     out = []
@@ -76,38 +76,48 @@ def str(bb):
         out.append("\n")
     return ''.join(out)
 
+
 def n(bb):
-     return (bb << 8) & 0xFFFFFFFFFFFFFFFF
+    return (bb << 8) & 0xFFFFFFFFFFFFFFFF
+
 
 def nn(bb):
-     return (bb << 16) & 0xFFFFFFFFFFFFFFFF
+    return (bb << 16) & 0xFFFFFFFFFFFFFFFF
+
 
 def e(bb):
     return (bb & square.NOT_LAST_FILE) << 1
 
+
 def s(bb):
     return bb >> 8
+
 
 def ss(bb):
     return bb >> 16
 
+
 def w(bb):
     return (bb & square.NOT_FIRST_FILE) >> 1
+
 
 def ne(bb):
     return ((bb & square.NOT_LAST_FILE) << 9) & 0xFFFFFFFFFFFFFFFF
 
+
 def se(bb):
     return (bb & square.NOT_LAST_FILE) >> 7
+
 
 def sw(bb):
     return (bb & square.NOT_FIRST_FILE) >> 9
 
+
 def nw(bb):
     return ((bb & square.NOT_FIRST_FILE) << 7) & 0xFFFFFFFFFFFFFFFF
 
-@classmethod
-def _parse(val):
+
+def parse(val):
     out = 0
     val = val.replace('\n', '')
     if len(val) != 64:
@@ -117,5 +127,5 @@ def _parse(val):
             ch = val[(7 - rank) * 8 + file]
             if ch not in BITS:
                 raise ValueError("invalid char in bitboard: %s" % sq)
-            out += bits_to_int[ch] * square.from_a8(rank, file)
+            out += BITS_TO_INT[ch] * square.from_a8(rank, file)
     return out

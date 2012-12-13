@@ -16,18 +16,18 @@
 #    under the License.
 
 CHARS = 'KQkq'
-char_to_flag = dict(zip(CHARS, [1 << i for i in xrange(4)]))
+CHAR_TO_FLAG = dict(zip(CHARS, [1 << i for i in xrange(4)]))
 NONE = 0
-WHITE_KING = char_to_flag['K']
-WHITE_QUEEN = char_to_flag['Q']
-BLACK_KING = char_to_flag['k']
-BLACK_QUEEN = char_to_flag['q']
+WHITE_KING = CHAR_TO_FLAG['K']
+WHITE_QUEEN = CHAR_TO_FLAG['Q']
+BLACK_KING = CHAR_TO_FLAG['k']
+BLACK_QUEEN = CHAR_TO_FLAG['q']
 
 
 def str(cstl):
     out = ''
     for char in CHARS:
-        if cstl & char_to_flag[char]:
+        if cstl & CHAR_TO_FLAG[char]:
             out += char
     return out or '-'
 
@@ -40,6 +40,5 @@ def parse(val):
         for char in val:
             if char not in CHARS:
                 raise ValueError("invalid castle value: %s" % val)
-            out |= char_to_flag[char]
+            out |= CHAR_TO_FLAG[char]
     return out
-
