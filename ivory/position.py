@@ -43,10 +43,11 @@ class Position(object):
     def _get_fen_board(self):
         pieces = [None] * 64
         for sq, pc in self.squares.iteritems():
-            val = piece.str(pc)
-            if self._get_square_color(sq) == 1:
-                val = val.upper()
-            pieces[square.index(sq)] = val
+            if pc:
+                val = piece.str(pc)
+                if self._get_square_color(sq) == 1:
+                    val = val.upper()
+                pieces[square.index(sq)] = val
         ranks = []
         for rank in xrange(8):
             count = 0
@@ -120,6 +121,8 @@ class Position(object):
             self.piece_bbs[pc] = bitboard.bb()
         self.color_bbs = {}
         self.squares = {}
+        for sq in square.all():
+            self.squares[sq] = None
         self.color_bbs[0] = bitboard.bb()
         self.color_bbs[1] = bitboard.bb()
         self.castle = castle.parse('KQkq')
@@ -135,12 +138,12 @@ class Position(object):
         self.squares[sq] = pc
 
     def clear_square(self, sq):
-        pc = self.squares.get(sq)
+        pc = self.squares[sq]
         if pc:
             self.piece_bbs[pc] &= ~sq
             self.color_bbs[0] &= ~sq
             self.color_bbs[1] &= ~sq
-            del self.squares[sq]
+            self.squares[sq] = None
         return pc
 
     def _parse_fen_board(self, board_string):
@@ -307,5 +310,5 @@ print p1.fen
 import time
 a = time.time()
 import cProfile
-cProfile.run('nodes = p1.perft(3)')
+cProfile.run('nodes = p1.perft(4)')
 print nodes, time.time() - a
