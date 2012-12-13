@@ -22,43 +22,6 @@ from ivory import piece
 from ivory import square
 
 
-class color(int):
-    COLORS = 'bw'
-    INTS = range(len(COLORS))
-    color_to_int = dict(zip(COLORS, INTS))
-    int_to_color = dict(zip(INTS, COLORS))
-    BLACK = color_to_int['b']
-    WHITE = color_to_int['w']
-
-    def __new__(cls, val=0):
-        if isinstance(val, basestring):
-            val = cls._parse(val)
-        return int.__new__(color, val)
-
-    def __str__(self):
-        return self.int_to_color[self]
-
-    def __repr__(self):
-        return "color('%s')" % self
-
-    @classmethod
-    def _parse(cls, val):
-        if val not in cls.COLORS:
-            if val.lower() in piece.PIECES:
-                return int(val.isupper())
-            else:
-                raise ValueError("invalid color value: %s" % val)
-        return cls.color_to_int[val]
-
-    def flip(self):
-        return color(not self)
-
-    @classmethod
-    def all(cls):
-        for i in cls.INTS:
-            yield cls(i)
-
-
 class Position(object):
     def __init__(self, fen=None):
         if not fen:
@@ -72,16 +35,15 @@ class Position(object):
         return "(%r)" % self.fen
 
     def _get_square_color(self, sq):
-        for cl in color.all():
-            if self.color_bbs[cl] & sq:
-                return cl
-        return color(color.NONE)
+        if self.color_bbs[0] & sq:
+            return 0
+        return 1
 
     def _get_fen_board(self):
         pieces = [None] * 64
         for sq, pc in self.squares.iteritems():
             val = piece.str(pc)
-            if self._get_square_color(sq) == color.WHITE:
+            if self._get_square_color(sq) == 1:
                 val = val.upper()
             pieces[square.index(sq)] = val
         ranks = []
@@ -106,9 +68,22 @@ class Position(object):
     def fen(self):
         board_string = self._get_fen_board()
 
-        return ' '.join([board_string, str(self.color), str(self.castle),
+        return ' '.join([board_string, 'bw'[self.color], str(self.castle),
                          self.en_passant or '-', str(self.halfmove_clock),
                          str(self.move_num)])
+
+    @staticmethod
+    def _parse_color(val):
+        if val not in 'bw':
+            raise ValueError("invalid color value: %s" % val)
+        return 0 if val == 'b' else 1
+
+    @staticmethod
+    def _parse_piece_color(val):
+        if val.lower() in piece.PIECES:
+            return int(val.isupper())
+        else:
+            raise ValueError("invalid piece: %s" % val)
 
     @fen.setter
     def fen(self, value):
@@ -118,7 +93,7 @@ class Position(object):
             raise ValueError('wrong number of fields')
         self._clear()
         self._parse_fen_board(board)
-        self.color = color(cl)
+        self.color = self._parse_color(cl)
         self.castle = movegen.castle(cst)
 
         if enp != '-':
@@ -144,8 +119,8 @@ class Position(object):
             self.piece_bbs[pc] = bitboard.bb()
         self.color_bbs = {}
         self.squares = {}
-        for cl in color.all():
-            self.color_bbs[cl] = bitboard.bb()
+        self.color_bbs[0] = bitboard.bb()
+        self.color_bbs[1] = bitboard.bb()
         self.castle = movegen.castle('KQkq')
         self.en_passant = square.sq()
         self.halfmove_clock = 0
@@ -162,8 +137,8 @@ class Position(object):
         pc = self.squares.get(sq)
         if pc:
             self.piece_bbs[pc] &= ~sq
-            for cl in color.all():
-                self.color_bbs[cl] &= ~sq
+            self.color_bbs[0] &= ~sq
+            self.color_bbs[1] &= ~sq
             del self.squares[sq]
         return pc
 
@@ -182,7 +157,7 @@ class Position(object):
                     else:
                         try:
                             pc = piece.pc(char)
-                            cl = color(char)
+                            cl = self._parse_piece_color(char)
                             self.set_square(square.from_a8(rank, file), pc, cl)
                             file += 1
                         except ValueError:
@@ -200,7 +175,7 @@ class Position(object):
 
     @property
     def occupied(self):
-        return self.color_bbs[color.WHITE] | self.color_bbs[color.BLACK]
+        return self.color_bbs[0] | self.color_bbs[1]
 
     @property
     def pseudo_moves(self):
@@ -254,7 +229,7 @@ class Position(object):
             files[ps].append(square.file(move.frsq(mv)))
             ranks[ps].append(square.rank(move.frsq(mv)))
 
-        opp_cl = self.color.flip()
+        opp_cl = not self.color
         for i, mv in enumerate(moves):
             ps = (move.piece(mv), move.tosq(mv))
             if files[ps].count(square.file(move.frsq(mv))) > 1:
@@ -269,17 +244,17 @@ class Position(object):
     def make_move(self, mv):
         self.MOVES.append(move)
         cl = self.color
-        self.color = self.color.flip()
+        self.color = not self.color
         opp_cl = self.color
         self.halfmove_clock += 1
-        if cl == color.BLACK:
+        if cl == 0:
             self.move_num += 1
         pc = self.clear_square(move.tosq(mv))
         self.set_square(move.tosq(mv), move.piece(mv), cl)
         self.clear_square(move.frsq(mv))
 
         if move.promotion(mv) == piece.PAWN:
-            back = square.n if opp_cl == color.WHITE else square.s
+            back = square.n if opp_cl == 1 else square.s
             self.clear_square(back(move.tosq(mv)))
         elif move.promotion(mv) == piece.KING:
             frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq(mv)]
@@ -290,16 +265,16 @@ class Position(object):
     def unmake_move(self, mv, pc):
         self.MOVES.pop()
         opp_cl = self.color
-        self.color = self.color.flip()
+        self.color = not self.color
         cl = self.color
         self.halfmove_clock -= 1
-        if cl == color.BLACK:
+        if cl == 0:
             self.move_num -= 1
         self.set_square(move.frsq(mv), move.piece(mv), cl)
         self.clear_square(move.tosq(mv))
 
         if move.promotion(mv) == piece.PAWN:
-            back = square.n if opp_cl == color.WHITE else square.s
+            back = square.n if opp_cl == 1 else square.s
             self.set_square(back(move.osq(mv)), piece.PAWN, opp_cl)
         elif move.promotion(mv) == piece.KING:
             frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq(mv)]

@@ -67,7 +67,7 @@ def get_pawn_moves(pos, moves):
     pawns = pos.piece_bbs[piece.PAWN] & pos.color_bbs[pos.color]
     not_occ = ~(pos.occupied)
     enp = pos.en_passant
-    opp_occ = pos.color_bbs[pos.color.flip()] | enp
+    opp_occ = pos.color_bbs[not pos.color] | enp
     if pos.color:
         # single pawn moves
         regular = pawns & ~square.BIT_RANKS[6]
@@ -131,7 +131,7 @@ def get_pawn_moves_2(pos, moves):
     pawns = pos.piece_bbs[piece.PAWN] & pos.color_bbs[pos.color]
     not_occ = ~(pos.occupied)
     enp = pos.en_passant
-    opp_occ = pos.color_bbs[pos.color.flip()] | enp
+    opp_occ = pos.color_bbs[not pos.color] | enp
     if pos.color:
         sets = ((bitboard.n, square.s, not_occ),
                  (bitboard.nw, square.se, opp_occ),
@@ -201,7 +201,7 @@ def get_queen_moves(pos, moves):
 
 def attacked(pos, sq, opp_cl=None):
     if not opp_cl:
-        opp_cl = pos.color.flip()
+        opp_cl = not pos.color
     opp_occ = pos.color_bbs[opp_cl]
     if ATTACKS[piece.KING][sq] & opp_occ & pos.piece_bbs[piece.KING]:
         return True
@@ -222,7 +222,7 @@ def attacked(pos, sq, opp_cl=None):
 
 def king_attacked(pos, cl):
     sq = pos.piece_bbs[piece.KING] & pos.color_bbs[cl]
-    return attacked(sq, cl.flip())
+    return attacked(sq, not cl)
 
 def _calc_slide_attacks(sq, occ, pc):
     result = bitboard.bb()
