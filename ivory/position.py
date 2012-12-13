@@ -113,7 +113,7 @@ class Position(object):
     @fen.setter
     def fen(self, value):
         try:
-            board, cl, cst, enp, clock, move = value.split()
+            board, cl, cst, enp, clock, move_num = value.split()
         except ValueError:
             raise ValueError('wrong number of fields')
         self._clear()
@@ -134,7 +134,7 @@ class Position(object):
             raise ValueError('bad halfmove clock')
 
         try:
-            self.move_num = int(move)
+            self.move_num = int(move_num)
         except ValueError:
             raise ValueError('bad move number')
 
