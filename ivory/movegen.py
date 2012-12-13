@@ -24,7 +24,7 @@ from ivory import piece
 from ivory import square
 
 
-def _make_promotions(moves, frsq, tosq):
+def _make_promotions(moves, tosq, frsq):
     for pc in (piece.KNIGHT, piece.BISHOP, piece.ROOK, piece.QUEEN):
         moves.append(move.mv(piece.PAWN, frsq, tosq, promotion=pc))
 
@@ -32,7 +32,7 @@ def _make_promotions(moves, frsq, tosq):
 def get_pawn_moves(pos, moves):
     pawns = pos.piece_bbs[piece.PAWN] & pos.color_bbs[pos.color]
     not_occ = ~(pos.occupied)
-    enp = pos.en_passant
+    enp = pos.enp
     opp_occ = pos.color_bbs[not pos.color] | enp
     if pos.color:
         # single pawn moves
@@ -142,7 +142,7 @@ def get_king_moves(pos, moves):
         if not attacked(pos, tosq):
             moves.append(move.mv(piece.KING, frsq, tosq))
     for flag, tosq, step, inter in CASTLE_FLAG_MAP[pos.color]:
-        if (pos.castle & flag or inter & pos.occupied
+        if (not (pos.castle & flag) or inter & pos.occupied
             or attacked(pos, step) or attacked(pos, tosq)):
             continue
         moves.append(move.mv(piece.KING, frsq, tosq, piece.KING))
@@ -173,7 +173,7 @@ def get_queen_moves(pos, moves):
 
 
 def attacked(pos, sq, opp_cl=None):
-    if not opp_cl:
+    if opp_cl is None:
         opp_cl = not pos.color
     opp_occ = pos.color_bbs[opp_cl]
     if ATTACKS[piece.KING][sq] & opp_occ & pos.piece_bbs[piece.KING]:
@@ -196,7 +196,7 @@ def attacked(pos, sq, opp_cl=None):
 
 def king_attacked(pos, cl):
     sq = pos.piece_bbs[piece.KING] & pos.color_bbs[cl]
-    return attacked(sq, not cl)
+    return attacked(pos, sq, not cl)
 
 
 def _calc_slide_attacks(sq, occ, pc):
@@ -235,24 +235,18 @@ def _knight_moves(sq):
 
 CASTLE_FLAG_MAP = (
     (
-        (castle.WHITE_QUEEN, square.sq('c1'), square.sq('d1'),
-         square.sq('b1') | square.sq('c1') | square.sq('d1')),
-        (castle.WHITE_KING, square.sq('g1'), square.sq('f1'),
-         square.sq('f1') | square.sq('g1')),
-    ),
-    (
         (castle.BLACK_QUEEN, square.sq('c8'), square.sq('d8'),
          square.sq('b8') | square.sq('c8') | square.sq('d8')),
         (castle.BLACK_KING, square.sq('g8'), square.sq('f8'),
          square.sq('f8') | square.sq('g8')),
     ),
+    (
+        (castle.WHITE_QUEEN, square.sq('c1'), square.sq('d1'),
+         square.sq('b1') | square.sq('c1') | square.sq('d1')),
+        (castle.WHITE_KING, square.sq('g1'), square.sq('f1'),
+         square.sq('f1') | square.sq('g1')),
+    ),
     )
-CASTLE_SQUARE_MAP = {
-    square.sq('c1'): (square.sq('a1'), square.sq('d1')),
-    square.sq('g1'): (square.sq('h1'), square.sq('f1')),
-    square.sq('c8'): (square.sq('a8'), square.sq('d8')),
-    square.sq('g8'): (square.sq('h8'), square.sq('f8')),
-}
 
 
 if os.path.exists('attacks.pickle'):

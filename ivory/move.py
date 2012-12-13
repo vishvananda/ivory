@@ -155,8 +155,9 @@ def str(mv):
             out.append('x')
     out.append(square.str(tosq(mv)))
     if promotion(mv):
+        print square.str(frsq(mv)), square.str(tosq(mv))
         out.append('=')
-        out.append(ivory_piece.str(promotion).upper())
+        out.append(ivory_piece.str(promotion(mv)).upper())
     if is_check(mv):
         out.append('+')
     if is_mate(mv):
