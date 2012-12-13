@@ -17,7 +17,7 @@
 import os
 import cPickle as pickle
 
-from ivory.bitboard import bitboard
+from ivory import bitboard
 from ivory import move
 from ivory.piece import piece
 from ivory import square
@@ -72,28 +72,29 @@ def get_pawn_moves(pos, moves):
         # single pawn moves
         regular = pawns & ~square.BIT_RANKS[6]
         promoting = pawns & square.BIT_RANKS[6]
-        single = pawns.n() & not_occ
-        for sq in single.squares():
+        single = bitboard.n(pawns) & not_occ
+        for sq in bitboard.squares(single):
             moves.append(move.mv(piece.PAWN, square.s(sq), sq))
-        for sq in (promoting.n() & not_occ).squares():
+        for sq in bitboard.squares(bitboard.n(promoting) & not_occ):
             _make_promotions(moves, sq, square.s(sq))
 
         # east attacks
-        for sq in (regular.ne() & opp_occ).squares():
+        for sq in bitboard.squares(bitboard.ne(regular) & opp_occ):
             prm = piece.PAWN if sq == enp else piece.NONE
             moves.append(move.mv(piece.PAWN, square.sw(sq), sq, prm))
-        for sq in (promoting.ne() & opp_occ).squares():
+        for sq in bitboard.squares(bitboard.ne(promoting) & opp_occ):
             _make_promotions(moves, sq, square.sw(sq))
 
         # west attacks
-        for sq in (regular.nw() & opp_occ).squares():
+        for sq in bitboard.squares(bitboard.nw(regular) & opp_occ):
             prm = piece.PAWN if sq == enp else piece.NONE
             moves.append(move.mv(piece.PAWN, square.se(sq), sq, prm))
-        for sq in (promoting.nw() & opp_occ).squares():
+        for sq in bitboard.squares(bitboard.nw(promoting) & opp_occ):
             _make_promotions(moves, sq, square.se(sq))
 
         # double pawn moves
-        for sq in ((single & square.BIT_RANKS[2]).n() & not_occ).squares():
+        doubles = bitboard.n(single & square.BIT_RANKS[2])
+        for sq in bitboard.squares(doubles & not_occ):
             moves.append(move.mv(piece.PAWN, square.ss(sq), sq))
 
 
@@ -101,28 +102,29 @@ def get_pawn_moves(pos, moves):
         # single pawn moves
         regular = pawns & ~square.BIT_RANKS[1]
         promoting = pawns & square.BIT_RANKS[1]
-        single = pawns.s() & not_occ
-        for sq in single.squares():
+        single = bitboard.s(pawns) & not_occ
+        for sq in bitboard.squares(single):
             moves.append(move.mv(piece.PAWN, square.n(sq), sq))
-        for sq in (promoting.s() & not_occ).squares():
+        for sq in bitboard.squares(bitboard.s(promoting) & not_occ):
             _make_promotions(moves, sq, square.n(sq))
 
         # east attacks
-        for sq in (regular.se() & opp_occ).squares():
+        for sq in bitboard.squares(bitboard.se(regular) & opp_occ):
             prm = piece.PAWN if sq == enp else piece.NONE
             moves.append(move.mv(piece.PAWN, square.nw(sq), sq, prm))
-        for sq in (promoting.se() & opp_occ).squares():
+        for sq in bitboard.squares(bitboard.se(promoting) & opp_occ):
             _make_promotions(moves, sq, square.nw(sq))
 
         # west attacks
-        for sq in (regular.sw() & opp_occ).squares():
+        for sq in bitboard.squares(bitboard.sw(regular) & opp_occ):
             prm = piece.PAWN if sq == enp else piece.NONE
             moves.append(move.mv(piece.PAWN, square.ne(sq), sq, prm))
-        for sq in (promoting.sw() & opp_occ).squares():
+        for sq in bitboard.squares(bitboard.sw(promoting) & opp_occ):
             _make_promotions(moves, sq, square.ne(sq))
 
         # double pawn moves
-        for sq in ((single & square.BIT_RANKS[5]).s() & not_occ).squares():
+        doubles = bitboard.s(single & square.BIT_RANKS[5])
+        for sq in bitboard.squares(doubles & not_occ):
             moves.append(move.mv(piece.PAWN, square.nn(sq), sq))
 
 def get_pawn_moves_2(pos, moves):
@@ -146,29 +148,29 @@ def get_pawn_moves_2(pos, moves):
     regular = pawns & ~square.BIT_RANKS[pro_rank]
     promoting = pawns & square.BIT_RANKS[pro_rank]
     for fwd, back, occ in sets:
-        for sq in (fwd(regular) & occ).squares():
+        for sq in bitboard.squares(fwd(regular) & occ):
             prm = piece.PAWN if sq == enp else piece.NONE
             moves.append(move.mv(piece.PAWN, back(sq), sq, prm))
-        for sq in (fwd(promoting) & occ).squares():
+        for sq in bitboard.squares(fwd(promoting) & occ):
             _make_promotions(moves, sq, back(sq))
 
     # double pawn moves
     occ = ~(pos.occupied | push(pos.occupied))
     double = (regular & square.BIT_RANKS[dbl_rank])
-    for sq in (dfwd(double) & occ).squares():
+    for sq in bitboard.squares(dfwd(double) & occ):
         moves.append(move.mv(piece.PAWN, dback(sq), sq))
 
 def get_knight_moves(pos, moves):
     knights = pos.piece_bbs[piece.KNIGHT] & pos.color_bbs[pos.color]
     not_occ = ~pos.color_bbs[pos.color]
-    for frsq in knights.squares():
-        for tosq in (ATTACKS[piece.KNIGHT][frsq] & not_occ).squares():
+    for frsq in bitboard.squares(knights):
+        for tosq in bitboard.squares(ATTACKS[piece.KNIGHT][frsq] & not_occ):
             moves.append(move.mv(piece.KNIGHT, frsq, tosq))
 
 def get_king_moves(pos, moves):
     frsq = pos.piece_bbs[piece.KING] & pos.color_bbs[pos.color]
     not_own_occ = ~pos.color_bbs[pos.color]
-    for tosq in (ATTACKS[piece.KING][frsq] & not_own_occ).squares():
+    for tosq in bitboard.squares(ATTACKS[piece.KING][frsq] & not_own_occ):
         if not attacked(pos, tosq):
             moves.append(move.mv(piece.KING, frsq, tosq))
     for flag, tosq, step, inter in CASTLE_FLAG_MAP[pos.color]:
@@ -182,9 +184,9 @@ def _get_sliding_moves(pos, moves, pc, source=None):
         source = pc
     pieces = pos.piece_bbs[source] & pos.color_bbs[pos.color]
     not_own_occ = ~pos.color_bbs[pos.color]
-    for frsq in pieces.squares():
+    for frsq in bitboard.squares(pieces):
         occ = pos.occupied & MASK[pc][frsq]
-        for tosq in (OCC_ATTACKS[pc][frsq][occ] & not_own_occ).squares():
+        for tosq in bitboard.squares(OCC_ATTACKS[pc][frsq][occ] & not_own_occ):
             moves.append(move.mv(source, frsq, tosq))
 
 def get_bishop_moves(pos, moves):
@@ -223,7 +225,7 @@ def king_attacked(pos, cl):
     return attacked(sq, cl.flip())
 
 def _calc_slide_attacks(sq, occ, pc):
-    result = bitboard()
+    result = bitboard.bb()
     dirs = ['ne', 'se', 'sw', 'nw'] if pc == piece.BISHOP else 'nesw'
     for dir in dirs:
         for test in square.walk(sq, dir):
@@ -234,40 +236,40 @@ def _calc_slide_attacks(sq, occ, pc):
 
 def _occ_attack_table(sq, pc):
     mask = MASK[pc][sq]
-    bits = mask.ones
+    bits = bitboard.ones(mask)
     attacks = {}
-    for occ_index in xrange(1 << mask.ones):
-        occ = bitboard()
-        for sq_index, test_sq in enumerate(mask.squares()):
+    for occ_index in xrange(1 << bits):
+        occ = bitboard.bb()
+        for sq_index, test_sq in enumerate(bitboard.squares(mask)):
             if occ_index & (1L << sq_index):
                 occ |= test_sq
         attacks[occ] = _calc_slide_attacks(sq, occ, pc)
     return attacks
 
 def _king_moves(sq):
-    return bitboard(square.n(sq) | square.s(sq) |
-                    square.e(sq) | square.w(sq) |
-                    square.ne(sq) | square.se(sq) |
-                    square.sw(sq) | square.nw(sq))
+    return bitboard.bb(square.n(sq) | square.s(sq) |
+                       square.e(sq) | square.w(sq) |
+                       square.ne(sq) | square.se(sq) |
+                       square.sw(sq) | square.nw(sq))
 
 def _knight_moves(sq):
-    return bitboard(square.nne(sq) | square.ene(sq) |
-                    square.ese(sq) | square.sse(sq) |
-                    square.ssw(sq) | square.wsw(sq) |
-                    square.wnw(sq) | square.nnw(sq))
+    return bitboard.bb(square.nne(sq) | square.ene(sq) |
+                       square.ese(sq) | square.sse(sq) |
+                       square.ssw(sq) | square.wsw(sq) |
+                       square.wnw(sq) | square.nnw(sq))
 
 CASTLE_FLAG_MAP = (
     (
         (castle.WHITE_QUEEN, square.sq('c1'), square.sq('d1'),
-         bitboard(square.sq('b1') | square.sq('c1') | square.sq('d1'))),
+         bitboard.bb(square.sq('b1') | square.sq('c1') | square.sq('d1'))),
         (castle.WHITE_KING, square.sq('g1'), square.sq('f1'),
-         bitboard(square.sq('f1') | square.sq('g1'))),
+         bitboard.bb(square.sq('f1') | square.sq('g1'))),
     ),
     (
         (castle.BLACK_QUEEN, square.sq('c8'), square.sq('d8'),
-         bitboard(square.sq('b8') | square.sq('c8') | square.sq('d8'))),
+         bitboard.bb(square.sq('b8') | square.sq('c8') | square.sq('d8'))),
         (castle.BLACK_KING, square.sq('g8'), square.sq('f8'),
-         bitboard(square.sq('f8') | square.sq('g8'))),
+         bitboard.bb(square.sq('f8') | square.sq('g8'))),
     ),
     )
 CASTLE_SQUARE_MAP = {
@@ -294,17 +296,21 @@ else:
     OCC_ATTACKS[piece.ROOK] = {}
 
     for sq in square.all():
-        rank = bitboard(square.BIT_RANKS[square.rank(sq)])
-        file = bitboard(square.BIT_FILES[square.file(sq)])
-        a1h8 = bitboard(square.BIT_A1H8[square.a1h8(sq)])
-        a8h1 = bitboard(square.BIT_A8H1[square.a8h1(sq)])
+        rank = bitboard.bb(square.BIT_RANKS[square.rank(sq)])
+        file = bitboard.bb(square.BIT_FILES[square.file(sq)])
+        a1h8 = bitboard.bb(square.BIT_A1H8[square.a1h8(sq)])
+        a8h1 = bitboard.bb(square.BIT_A8H1[square.a8h1(sq)])
 
         ATTACKS[piece.BISHOP][sq] = a1h8 | a8h1
-        MASK[piece.BISHOP][sq] = ((a1h8 & ~a1h8.msb() & ~a1h8.lsb()) |
-                                  (a8h1 & ~a8h1.msb() & ~a8h1.lsb()))
+        MASK[piece.BISHOP][sq] = (
+                (a1h8 & ~bitboard.msb(a1h8) & ~bitboard.lsb(a1h8)) |
+                (a8h1 & ~bitboard.msb(a8h1) & ~bitboard.lsb(a8h1))
+        )
         ATTACKS[piece.ROOK][sq] = rank | file
-        MASK[piece.ROOK][sq] = ((rank & ~rank.msb() & ~rank.lsb()) |
-                                (file & ~file.msb() & ~file.lsb()))
+        MASK[piece.ROOK][sq] = (
+            (rank & ~bitboard.msb(rank) & ~bitboard.lsb(rank)) |
+            (file & ~bitboard.msb(file) & ~bitboard.lsb(file))
+        )
         OCC_ATTACKS[piece.BISHOP][sq] = _occ_attack_table(sq, piece.BISHOP)
         OCC_ATTACKS[piece.ROOK][sq] = _occ_attack_table(sq, piece.ROOK)
         ATTACKS[piece.KING][sq] = _king_moves(sq)

@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from ivory.bitboard import bitboard
+from ivory import bitboard
 from ivory import move
 from ivory import movegen
 from ivory.piece import piece
@@ -141,11 +141,11 @@ class Position(object):
     def _clear(self):
         self.piece_bbs = {}
         for pc in piece.all():
-            self.piece_bbs[pc] = bitboard()
+            self.piece_bbs[pc] = bitboard.bb()
         self.color_bbs = {}
         self.squares = {}
         for cl in color.all():
-            self.color_bbs[cl] = bitboard()
+            self.color_bbs[cl] = bitboard.bb()
         self.castle = movegen.castle('KQkq')
         self.en_passant = square.sq()
         self.halfmove_clock = 0
