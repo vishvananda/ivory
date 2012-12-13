@@ -16,7 +16,7 @@
 #    under the License.
 
 from ivory.piece import piece
-from ivory.square import square
+from ivory import square
 
 class move(int):
     NONE = 0
@@ -40,7 +40,8 @@ class move(int):
                 capture=False, check=False, mate=False,
                 show_file=False, show_rank=False):
         val = piece
-        val = ((frsq.index << self.FRSQ_OFF) | (tosq.index << self.TOSQ_OFF) |
+        val = ((square.index(frsq) << self.FRSQ_OFF) |
+               (square.index(tosq) << self.TOSQ_OFF) |
                (piece << self.PIECE_OFF) | (promotion << self.PROMOTION_OFF))
         if capture:
             val |= self.CAPTURE
@@ -149,14 +150,14 @@ class move(int):
         return square.from_index((self & self.FRSQ) >> self.FRSQ_OFF)
 
     def set_frsq(self, sq):
-        return self & ~self.FRSQ | (sq.index << self.FRSQ_OFF)
+        return self & ~self.FRSQ | (square.index(sq) << self.FRSQ_OFF)
 
     @property
     def tosq(self):
         return square.from_index((self & self.TOSQ) >> self.TOSQ_OFF)
 
     def set_tosq(self, sq):
-        return self & ~self.TOSQ | (sq.index << self.TOSQ_OFF)
+        return self & ~self.TOSQ | (square.index(sq) << self.TOSQ_OFF)
 
     def __repr__(self):
         out = "move(%r, %r, %r" % (self.piece, self.frsq, self.tosq)
@@ -169,21 +170,21 @@ class move(int):
 
     def __str__(self):
         if self.promotion == piece.KING:
-            return 'O-O-O' if self.tosq.file == 'c' else 'O-O'
+            return 'O-O-O' if square.file(self.tosq) == 'c' else 'O-O'
         out = []
         if self.piece == piece.PAWN:
             if self.capture:
-                out.append(self.frsq.file)
+                out.append(square.file(self.frsq))
                 out.append('x')
         else:
             out.append(str(self.piece).upper())
             if self.show_file:
-                out.append(self.frsq.file)
+                out.append(square.file(self.frsq))
             if self.show_rank:
-                out.append(self.frsq.rank)
+                out.append(square.rank(self.frsq))
             if self.capture:
                 out.append('x')
-        out.append(str(self.tosq))
+        out.append(square.str(self.tosq))
         if self.promotion:
             out.append('=')
             out.append(str(self.promotion).upper())

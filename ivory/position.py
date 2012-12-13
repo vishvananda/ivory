@@ -18,7 +18,7 @@
 from ivory.bitboard import bitboard
 from ivory import movegen
 from ivory.piece import piece
-from ivory.square import square
+from ivory import square
 
 
 class color(int):
@@ -82,13 +82,13 @@ class Position(object):
             val = str(ps)
             if self._get_square_color(sq) == color.WHITE:
                 val = val.upper()
-            pieces[sq.index] = val
+            pieces[square.index(sq)] = val
         ranks = []
         for rank in xrange(8):
             count = 0
             out = ''
             for file in xrange(8):
-                piece = pieces[square.from_a8(rank, file).index]
+                piece = pieces[square.index(square.from_a8(rank, file))]
                 if piece is None:
                     count += 1
                     if file == 7:
@@ -122,7 +122,7 @@ class Position(object):
 
         if enp != '-':
             try:
-                self.en_passant = square(enp)
+                self.en_passant = square.sq(enp)
             except ValueError:
                 raise ValueError('bad en passant data')
             self.en_passant = enp
@@ -146,7 +146,7 @@ class Position(object):
         for cl in color.all():
             self.color_bbs[cl] = bitboard()
         self.castle = movegen.castle('KQkq')
-        self.en_passant = square()
+        self.en_passant = square.sq()
         self.halfmove_clock = 0
         self.move_num = 1
 
@@ -250,15 +250,15 @@ class Position(object):
             ps = (move.piece, move.tosq)
             files.setdefault(ps, [])
             ranks.setdefault(ps, [])
-            files[ps].append(move.frsq.file)
-            ranks[ps].append(move.frsq.rank)
+            files[ps].append(square.file(move.frsq))
+            ranks[ps].append(square.rank(move.frsq))
 
         opp_cl = self.color.flip()
         for i, move in enumerate(moves):
             ps = (move.piece, move.tosq)
-            if files[ps].count(move.frsq.file) > 1:
+            if files[ps].count(square.file(move.frsq)) > 1:
                 moves[i] = moves[i].set_show_rank()
-            if ranks[ps].count(move.frsq.rank) > 1:
+            if ranks[ps].count(square.rank(move.frsq)) > 1:
                 moves[i] = moves[i].set_show_file()
 
     def __getitem__(self, index):
@@ -278,8 +278,8 @@ class Position(object):
         self.clear_square(move.frsq)
 
         if move.promotion == piece.PAWN:
-            enp = move.tosq.n() if opp_cl == color.WHITE else move.tosq.s()
-            self.clear_square(enp)
+            back = square.n if opp_cl == color.WHITE else square.s
+            self.clear_square(back(move.tosq))
         elif move.promotion == piece.KING:
             frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq]
             rook = self.clear_square(frsq)
@@ -298,8 +298,8 @@ class Position(object):
         self.clear_square(move.tosq)
 
         if move.promotion == piece.PAWN:
-            enp = move.tosq.n() if opp_cl == color.WHITE else move.tosq.s()
-            self.set_square(enp, piece(piece.PAWN), opp_cl)
+            back = square.n if opp_cl == color.WHITE else square.s
+            self.set_square(back(move.osq), piece(piece.PAWN), opp_cl)
         elif move.promotion == piece.KING:
             frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq]
             rook = self.clear_square(frsq)
@@ -319,7 +319,7 @@ class Position(object):
 
 # NOTE(vish): insert constants into locals
 for sq in square.all():
-    locals()[str(sq)] = square(sq)
+    locals()[square.str(sq)] = square.sq(sq)
 
 for pc in piece.all():
     locals()[str(pc)] = piece(pc)

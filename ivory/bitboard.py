@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from ivory.square import square
+from ivory import square
 
 
 class bitboard(long):
@@ -31,7 +31,7 @@ class bitboard(long):
            25, 39, 14, 33, 19, 30,  9, 24,
            13, 18,  8, 12,  7,  6,  5, 63
     ]
-    BS_SQUARES = [square(square.INTS[i]) for i in BS_INDEX]
+    BS_SQUARES = [square.INTS[i] for i in BS_INDEX]
     DEBRUIJIN = 0x03f79d71b4cb0a89L
 
     def lsb(self):
