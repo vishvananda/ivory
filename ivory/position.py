@@ -244,48 +244,47 @@ class Position(object):
     def __getitem__(self, index):
         return self.squares.get(index)
 
-    MOVES = []
     def make_move(self, mv):
-        self.MOVES.append(move)
         cl = self.color
         self.color = not self.color
         opp_cl = self.color
         self.halfmove_clock += 1
         if cl == 0:
             self.move_num += 1
-        pc = self.clear_square(move.tosq(mv))
-        self.set_square(move.tosq(mv), move.piece(mv), cl)
+        tosq = move.tosq(mv)
+        pc = self.clear_square(tosq)
+        self.set_square(tosq, move.piece(mv), cl)
         self.clear_square(move.frsq(mv))
 
         if move.promotion(mv) == piece.PAWN:
             back = square.n if opp_cl == 1 else square.s
-            self.clear_square(back(move.tosq(mv)))
+            self.clear_square(back(tosq))
         elif move.promotion(mv) == piece.KING:
-            frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq(mv)]
-            rook = self.clear_square(frsq)
-            self.set_square(tosq, rook, cl)
+            rfrsq, rtosq = self.CASTLE_SQUARE_MAP[tosq]
+            rook = self.clear_square(rfrsq)
+            self.set_square(rtosq, rook, cl)
         return pc
 
     def unmake_move(self, mv, pc):
-        self.MOVES.pop()
         opp_cl = self.color
         self.color = not self.color
         cl = self.color
         self.halfmove_clock -= 1
         if cl == 0:
             self.move_num -= 1
+        tosq = move.tosq(mv)
         self.set_square(move.frsq(mv), move.piece(mv), cl)
-        self.clear_square(move.tosq(mv))
+        self.clear_square(tosq)
 
         if move.promotion(mv) == piece.PAWN:
             back = square.n if opp_cl == 1 else square.s
-            self.set_square(back(move.osq(mv)), piece.PAWN, opp_cl)
+            self.set_square(back(tosq), piece.PAWN, opp_cl)
         elif move.promotion(mv) == piece.KING:
-            frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq(mv)]
-            rook = self.clear_square(frsq)
-            self.set_square(move.tosq(mv), rook, cl)
-        elif pc:
-            self.set_square(move.tosq(mv), pc, opp_cl)
+            rfrsq, rtosq = self.CASTLE_SQUARE_MAP[tosq]
+            rook = self.clear_square(rtosq)
+            self.set_square(rfrsq, rook, cl)
+        if pc:
+            self.set_square(tosq, pc, opp_cl)
 
     def perft(self, depth):
         nodes = 0
