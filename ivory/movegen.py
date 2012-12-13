@@ -18,7 +18,7 @@ import os
 import cPickle as pickle
 
 from ivory.bitboard import bitboard
-from ivory.move import move
+from ivory import move
 from ivory.piece import piece
 from ivory import square
 
@@ -61,7 +61,7 @@ class castle(int):
 
 def _make_promotions(moves, frsq, tosq):
     for pc in (piece.KNIGHT, piece.BISHOP, piece.ROOK, piece.QUEEN):
-        moves.append(move(piece.PAWN, frsq, tosq, promotion=pc))
+        moves.append(move.mv(piece.PAWN, frsq, tosq, promotion=pc))
 
 def get_pawn_moves(pos, moves):
     pawns = pos.piece_bbs[piece.PAWN] & pos.color_bbs[pos.color]
@@ -74,27 +74,27 @@ def get_pawn_moves(pos, moves):
         promoting = pawns & square.BIT_RANKS[6]
         single = pawns.n() & not_occ
         for sq in single.squares():
-            moves.append(move(piece.PAWN, square.s(sq), sq))
+            moves.append(move.mv(piece.PAWN, square.s(sq), sq))
         for sq in (promoting.n() & not_occ).squares():
             _make_promotions(moves, sq, square.s(sq))
 
         # east attacks
         for sq in (regular.ne() & opp_occ).squares():
             prm = piece.PAWN if sq == enp else piece.NONE
-            moves.append(move(piece.PAWN, square.sw(sq), sq, prm))
+            moves.append(move.mv(piece.PAWN, square.sw(sq), sq, prm))
         for sq in (promoting.ne() & opp_occ).squares():
             _make_promotions(moves, sq, square.sw(sq))
 
         # west attacks
         for sq in (regular.nw() & opp_occ).squares():
             prm = piece.PAWN if sq == enp else piece.NONE
-            moves.append(move(piece.PAWN, square.se(sq), sq, prm))
+            moves.append(move.mv(piece.PAWN, square.se(sq), sq, prm))
         for sq in (promoting.nw() & opp_occ).squares():
             _make_promotions(moves, sq, square.se(sq))
 
         # double pawn moves
         for sq in ((single & square.BIT_RANKS[2]).n() & not_occ).squares():
-            moves.append(move(piece.PAWN, square.ss(sq), sq))
+            moves.append(move.mv(piece.PAWN, square.ss(sq), sq))
 
 
     else:
@@ -103,27 +103,27 @@ def get_pawn_moves(pos, moves):
         promoting = pawns & square.BIT_RANKS[1]
         single = pawns.s() & not_occ
         for sq in single.squares():
-            moves.append(move(piece.PAWN, square.n(sq), sq))
+            moves.append(move.mv(piece.PAWN, square.n(sq), sq))
         for sq in (promoting.s() & not_occ).squares():
             _make_promotions(moves, sq, square.n(sq))
 
         # east attacks
         for sq in (regular.se() & opp_occ).squares():
             prm = piece.PAWN if sq == enp else piece.NONE
-            moves.append(move(piece.PAWN, square.nw(sq), sq, prm))
+            moves.append(move.mv(piece.PAWN, square.nw(sq), sq, prm))
         for sq in (promoting.se() & opp_occ).squares():
             _make_promotions(moves, sq, square.nw(sq))
 
         # west attacks
         for sq in (regular.sw() & opp_occ).squares():
             prm = piece.PAWN if sq == enp else piece.NONE
-            moves.append(move(piece.PAWN, square.ne(sq), sq, prm))
+            moves.append(move.mv(piece.PAWN, square.ne(sq), sq, prm))
         for sq in (promoting.sw() & opp_occ).squares():
             _make_promotions(moves, sq, square.ne(sq))
 
         # double pawn moves
         for sq in ((single & square.BIT_RANKS[5]).s() & not_occ).squares():
-            moves.append(move(piece.PAWN, square.nn(sq), sq))
+            moves.append(move.mv(piece.PAWN, square.nn(sq), sq))
 
 def get_pawn_moves_2(pos, moves):
     pawns = pos.piece_bbs[piece.PAWN] & pos.color_bbs[pos.color]
@@ -148,7 +148,7 @@ def get_pawn_moves_2(pos, moves):
     for fwd, back, occ in sets:
         for sq in (fwd(regular) & occ).squares():
             prm = piece.PAWN if sq == enp else piece.NONE
-            moves.append(move(piece.PAWN, back(sq), sq, prm))
+            moves.append(move.mv(piece.PAWN, back(sq), sq, prm))
         for sq in (fwd(promoting) & occ).squares():
             _make_promotions(moves, sq, back(sq))
 
@@ -156,26 +156,26 @@ def get_pawn_moves_2(pos, moves):
     occ = ~(pos.occupied | push(pos.occupied))
     double = (regular & square.BIT_RANKS[dbl_rank])
     for sq in (dfwd(double) & occ).squares():
-        moves.append(move(piece.PAWN, dback(sq), sq))
+        moves.append(move.mv(piece.PAWN, dback(sq), sq))
 
 def get_knight_moves(pos, moves):
     knights = pos.piece_bbs[piece.KNIGHT] & pos.color_bbs[pos.color]
     not_occ = ~pos.color_bbs[pos.color]
     for frsq in knights.squares():
         for tosq in (ATTACKS[piece.KNIGHT][frsq] & not_occ).squares():
-            moves.append(move(piece.KNIGHT, frsq, tosq))
+            moves.append(move.mv(piece.KNIGHT, frsq, tosq))
 
 def get_king_moves(pos, moves):
     frsq = pos.piece_bbs[piece.KING] & pos.color_bbs[pos.color]
     not_own_occ = ~pos.color_bbs[pos.color]
     for tosq in (ATTACKS[piece.KING][frsq] & not_own_occ).squares():
         if not attacked(pos, tosq):
-            moves.append(move(piece.KING, frsq, tosq))
+            moves.append(move.mv(piece.KING, frsq, tosq))
     for flag, tosq, step, inter in CASTLE_FLAG_MAP[pos.color]:
         if (pos.castle & flag or inter & pos.occupied
             or attacked(pos, step) or attacked(pos, tosq)):
             continue
-        moves.append(move(piece.KING, frsq, tosq, piece.KING))
+        moves.append(move.mv(piece.KING, frsq, tosq, piece.KING))
 
 def _get_sliding_moves(pos, moves, pc, source=None):
     if not source:
@@ -185,7 +185,7 @@ def _get_sliding_moves(pos, moves, pc, source=None):
     for frsq in pieces.squares():
         occ = pos.occupied & MASK[pc][frsq]
         for tosq in (OCC_ATTACKS[pc][frsq][occ] & not_own_occ).squares():
-            moves.append(move(source, frsq, tosq))
+            moves.append(move.mv(source, frsq, tosq))
 
 def get_bishop_moves(pos, moves):
     _get_sliding_moves(pos, moves, piece.BISHOP)

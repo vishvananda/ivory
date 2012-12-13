@@ -16,6 +16,7 @@
 #    under the License.
 
 from ivory.bitboard import bitboard
+from ivory import move
 from ivory import movegen
 from ivory.piece import piece
 from ivory import square
@@ -220,21 +221,21 @@ class Position(object):
         return moves
 
     def _test_moves(self, moves, check_end=True):
-        for move in moves:
+        for mv in moves:
             moving_color = self.color
-            pc = self.make_move(move)
+            pc = self.make_move(mv)
             if movegen.king_attacked(self, moving_color):
-                moves.pop(move)
+                moves.pop(mv)
                 continue
             if pc:
-                moves[moves.index(move)] = move.set_capture()
+                moves[moves.index(mv)] = move.set_capture(mv)
 
             if check_end and movegen.king_attacked(self, self.color):
                 if self._game_over(self):
-                    moves[moves.index(move)] = move.set_mate()
+                    moves[moves.index(mv)] = move.set_mate(mv)
                 else:
-                    moves[moves.index(move)] = move.set_check()
-            self.unmake_move(move, pc)
+                    moves[moves.index(mv)] = move.set_check(mv)
+            self.unmake_move(mv, pc)
 
     def _game_over(self):
         moves = self.moves
@@ -244,28 +245,28 @@ class Position(object):
     def _disambiguate_moves(self, moves):
         files = {}
         ranks = {}
-        for move in moves:
-            if move.promotion:
+        for mv in moves:
+            if move.promotion(mv):
                 continue
-            ps = (move.piece, move.tosq)
+            ps = (move.piece(mv), move.tosq(mv))
             files.setdefault(ps, [])
             ranks.setdefault(ps, [])
-            files[ps].append(square.file(move.frsq))
-            ranks[ps].append(square.rank(move.frsq))
+            files[ps].append(square.file(move.frsq(mv)))
+            ranks[ps].append(square.rank(move.frsq(mv)))
 
         opp_cl = self.color.flip()
-        for i, move in enumerate(moves):
-            ps = (move.piece, move.tosq)
-            if files[ps].count(square.file(move.frsq)) > 1:
+        for i, mv in enumerate(moves):
+            ps = (move.piece(mv), move.tosq(mv))
+            if files[ps].count(square.file(move.frsq(mv))) > 1:
                 moves[i] = moves[i].set_show_rank()
-            if ranks[ps].count(square.rank(move.frsq)) > 1:
+            if ranks[ps].count(square.rank(move.frsq(mv))) > 1:
                 moves[i] = moves[i].set_show_file()
 
     def __getitem__(self, index):
         return self.squares.get(index)
 
     MOVES = []
-    def make_move(self, move):
+    def make_move(self, mv):
         self.MOVES.append(move)
         cl = self.color
         self.color = self.color.flip()
@@ -273,20 +274,20 @@ class Position(object):
         self.halfmove_clock += 1
         if cl == color.BLACK:
             self.move_num += 1
-        pc = self.clear_square(move.tosq)
-        self.set_square(move.tosq, move.piece, cl)
-        self.clear_square(move.frsq)
+        pc = self.clear_square(move.tosq(mv))
+        self.set_square(move.tosq(mv), move.piece(mv), cl)
+        self.clear_square(move.frsq(mv))
 
-        if move.promotion == piece.PAWN:
+        if move.promotion(mv) == piece.PAWN:
             back = square.n if opp_cl == color.WHITE else square.s
-            self.clear_square(back(move.tosq))
-        elif move.promotion == piece.KING:
-            frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq]
+            self.clear_square(back(move.tosq(mv)))
+        elif move.promotion(mv) == piece.KING:
+            frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq(mv)]
             rook = self.clear_square(frsq)
             self.set_square(tosq, rook, cl)
         return pc
 
-    def unmake_move(self, move, pc):
+    def unmake_move(self, mv, pc):
         self.MOVES.pop()
         opp_cl = self.color
         self.color = self.color.flip()
@@ -294,18 +295,18 @@ class Position(object):
         self.halfmove_clock -= 1
         if cl == color.BLACK:
             self.move_num -= 1
-        self.set_square(move.frsq, move.piece, cl)
-        self.clear_square(move.tosq)
+        self.set_square(move.frsq(mv), move.piece(mv), cl)
+        self.clear_square(move.tosq(mv))
 
-        if move.promotion == piece.PAWN:
+        if move.promotion(mv) == piece.PAWN:
             back = square.n if opp_cl == color.WHITE else square.s
-            self.set_square(back(move.osq), piece(piece.PAWN), opp_cl)
-        elif move.promotion == piece.KING:
-            frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq]
+            self.set_square(back(move.osq(mv)), piece(piece.PAWN), opp_cl)
+        elif move.promotion(mv) == piece.KING:
+            frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq(mv)]
             rook = self.clear_square(frsq)
-            self.set_square(move.tosq, rook, cl)
+            self.set_square(move.tosq(mv), rook, cl)
         elif pc:
-            self.set_square(move.tosq, pc, opp_cl)
+            self.set_square(move.tosq(mv), pc, opp_cl)
 
     def perft(self, depth):
         nodes = 0
