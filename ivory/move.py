@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from ivory.piece import piece as ivory_piece
+from ivory import piece as ivory_piece
 from ivory import square
 
 NONE = 0

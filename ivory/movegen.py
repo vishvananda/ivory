@@ -19,7 +19,7 @@ import cPickle as pickle
 
 from ivory import bitboard
 from ivory import move
-from ivory.piece import piece
+from ivory import piece
 from ivory import square
 
 class castle(int):

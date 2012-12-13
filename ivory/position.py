@@ -18,7 +18,7 @@
 from ivory import bitboard
 from ivory import move
 from ivory import movegen
-from ivory.piece import piece
+from ivory import piece
 from ivory import square
 
 
@@ -79,8 +79,8 @@ class Position(object):
 
     def _get_fen_board(self):
         pieces = [None] * 64
-        for sq, ps in self.squares.iteritems():
-            val = str(ps)
+        for sq, pc in self.squares.iteritems():
+            val = piece.str(pc)
             if self._get_square_color(sq) == color.WHITE:
                 val = val.upper()
             pieces[square.index(sq)] = val
@@ -89,8 +89,8 @@ class Position(object):
             count = 0
             out = ''
             for file in xrange(8):
-                piece = pieces[square.index(square.from_a8(rank, file))]
-                if piece is None:
+                pc = pieces[square.index(square.from_a8(rank, file))]
+                if pc is None:
                     count += 1
                     if file == 7:
                         out += '%d' % count
@@ -98,7 +98,7 @@ class Position(object):
                     if count:
                         out += '%d' % count
                         count = 0
-                    out += str(piece)
+                    out += pc
             ranks.append(out)
         return '/'.join(ranks)
 
@@ -181,7 +181,7 @@ class Position(object):
                         file += num
                     else:
                         try:
-                            pc = piece(char)
+                            pc = piece.pc(char)
                             cl = color(char)
                             self.set_square(square.from_a8(rank, file), pc, cl)
                             file += 1
@@ -300,7 +300,7 @@ class Position(object):
 
         if move.promotion(mv) == piece.PAWN:
             back = square.n if opp_cl == color.WHITE else square.s
-            self.set_square(back(move.osq(mv)), piece(piece.PAWN), opp_cl)
+            self.set_square(back(move.osq(mv)), piece.PAWN, opp_cl)
         elif move.promotion(mv) == piece.KING:
             frsq, tosq = self.CASTLE_SQUARE_MAP[move.tosq(mv)]
             rook = self.clear_square(frsq)
@@ -320,10 +320,10 @@ class Position(object):
 
 # NOTE(vish): insert constants into locals
 for sq in square.all():
-    locals()[square.str(sq)] = square.sq(sq)
+    locals()[square.str(sq)] = sq
 
 for pc in piece.all():
-    locals()[str(pc)] = piece(pc)
+    locals()[piece.str(pc)] = pc
 
 p1 = Position()
 print p1.fen

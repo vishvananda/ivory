@@ -15,40 +15,34 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-class piece(int):
-    PIECES = 'pnbrqk'
-    INTS = range(1, len(PIECES) + 1)
-    piece_to_int = dict(zip(PIECES, INTS))
-    piece_to_int['-'] = 0
-    int_to_piece = dict(zip(INTS, PIECES))
-    int_to_piece[0] = '-'
-    NONE = piece_to_int['-']
-    PAWN = piece_to_int['p']
-    KNIGHT = piece_to_int['n']
-    BISHOP = piece_to_int['b']
-    ROOK = piece_to_int['r']
-    QUEEN = piece_to_int['q']
-    KING = piece_to_int['k']
+PIECES = 'pnbrqk'
+INTS = range(1, len(PIECES) + 1)
+piece_to_int = dict(zip(PIECES, INTS))
+piece_to_int['-'] = 0
+int_to_piece = dict(zip(INTS, PIECES))
+int_to_piece[0] = '-'
+NONE = piece_to_int['-']
+PAWN = piece_to_int['p']
+KNIGHT = piece_to_int['n']
+BISHOP = piece_to_int['b']
+ROOK = piece_to_int['r']
+QUEEN = piece_to_int['q']
+KING = piece_to_int['k']
 
-    def __new__(cls, val=0):
-        if isinstance(val, basestring):
-            val = cls._parse(val)
-        return int.__new__(piece, val)
+def pc(val=0):
+    if isinstance(val, basestring):
+        val = _parse(val)
+    return val
 
-    def __str__(self):
-        return self.int_to_piece[self]
+def str(pc):
+    return int_to_piece[pc]
 
-    def __repr__(self):
-        return "piece('%s')" % self
+def _parse(val):
+    val = val.lower()
+    if val not in PIECES:
+        raise ValueError("invalid piece value: %s" % val)
+    return piece_to_int[val]
 
-    @classmethod
-    def _parse(cls, val):
-        val = val.lower()
-        if val not in cls.PIECES:
-            raise ValueError("invalid piece value: %s" % val)
-        return cls.piece_to_int[val]
-
-    @classmethod
-    def all(cls):
-        for i in cls.INTS:
-            yield cls(i)
+def all():
+    for i in INTS:
+        yield i
