@@ -16,6 +16,7 @@
 #    under the License.
 
 from ivory import bitboard
+from ivory import castle
 from ivory import move
 from ivory import movegen
 from ivory import piece
@@ -68,9 +69,9 @@ class Position(object):
     def fen(self):
         board_string = self._get_fen_board()
 
-        return ' '.join([board_string, 'bw'[self.color], str(self.castle),
-                         self.en_passant or '-', str(self.halfmove_clock),
-                         str(self.move_num)])
+        return ' '.join([board_string, 'bw'[self.color],
+                         castle.str(self.castle), self.en_passant or '-',
+                         str(self.halfmove_clock), str(self.move_num)])
 
     @staticmethod
     def _parse_color(val):
@@ -94,7 +95,7 @@ class Position(object):
         self._clear()
         self._parse_fen_board(board)
         self.color = self._parse_color(cl)
-        self.castle = movegen.castle(cst)
+        self.castle = castle.parse(cst)
 
         if enp != '-':
             try:
@@ -121,7 +122,7 @@ class Position(object):
         self.squares = {}
         self.color_bbs[0] = bitboard.bb()
         self.color_bbs[1] = bitboard.bb()
-        self.castle = movegen.castle('KQkq')
+        self.castle = castle.parse('KQkq')
         self.en_passant = square.sq()
         self.halfmove_clock = 0
         self.move_num = 1

@@ -18,46 +18,10 @@ import os
 import cPickle as pickle
 
 from ivory import bitboard
+from ivory import castle
 from ivory import move
 from ivory import piece
 from ivory import square
-
-class castle(int):
-    CHARS = 'KQkq'
-    char_to_flag = dict(zip(CHARS, [1 << i for i in xrange(4)]))
-    NONE = 0
-    WHITE_KING = char_to_flag['K']
-    WHITE_QUEEN = char_to_flag['Q']
-    BLACK_KING = char_to_flag['k']
-    BLACK_QUEEN = char_to_flag['q']
-
-    def __new__(cls, val):
-        if isinstance(val, basestring):
-            val = cls._parse(val)
-        return int.__new__(castle, val)
-
-    def __str__(self):
-        out = ''
-        for char in self.CHARS:
-            if self & self.char_to_flag[char]:
-                out += char
-        return out or '-'
-
-    def __repr__(self):
-        return "castle('%s')" % self
-
-
-    @classmethod
-    def _parse(cls, val):
-        if len(val) > 4:
-            raise ValueError("invalid castle value: %s" % val)
-        out = cls.NONE
-        if val != '-':
-            for char in val:
-                if char not in cls.CHARS:
-                    raise ValueError("invalid castle value: %s" % val)
-                out |= cls.char_to_flag[char]
-        return out
 
 def _make_promotions(moves, frsq, tosq):
     for pc in (piece.KNIGHT, piece.BISHOP, piece.ROOK, piece.QUEEN):
